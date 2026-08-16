@@ -1,36 +1,46 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# EduSuccess — AI-Powered Dropout Prediction Platform
 
-## Getting Started
+A full-stack platform that uses machine learning to predict student dropout risk and recommend interventions.
 
-First, run the development server:
+## Tech Stack
+- **Frontend**: Next.js 16, Tailwind CSS, Lucide React
+- **Backend AI API**: Python FastAPI + Uvicorn
+- **Database**: SQLite via Prisma ORM
+- **SDG Goal**: SDG 4 — Quality Education
 
+## Local Development
+
+### 1. Start the Python AI API
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+# Create a virtual environment (first time only)
+python -m venv venv
+
+# Activate it
+.\venv\Scripts\activate  # Windows
+source venv/bin/activate  # Mac/Linux
+
+# Install dependencies
+pip install -r api/requirements.txt
+
+# Start the server
+uvicorn api.main:app --reload
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 2. Setup & Start the Next.js Frontend (in a new terminal)
+```bash
+# Install dependencies
+npm install
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+# Generate Prisma Client and setup database
+npx prisma generate
+npx prisma db push
+npx prisma db seed
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+# Start dev server
+npm run dev
+```
 
-## Learn More
+Open [http://localhost:3000](http://localhost:3000) to view the dashboard.
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Deploy to Render
+See the full step-by-step deployment guide in `DEPLOY.md`.

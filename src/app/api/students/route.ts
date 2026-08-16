@@ -78,7 +78,8 @@ export async function POST(request: Request) {
     let recommendedInterventions: string[] = [];
 
     try {
-      const apiResponse = await fetch('http://127.0.0.1:8000/predict', {
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
+      const apiResponse = await fetch(`${API_URL}/predict`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
