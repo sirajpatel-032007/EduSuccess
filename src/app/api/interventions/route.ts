@@ -25,3 +25,24 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
   }
 }
+
+export async function PATCH(request: Request) {
+  try {
+    const body = await request.json();
+    const { id, status } = body;
+
+    if (!id || !status) {
+      return NextResponse.json({ error: 'Missing id or status' }, { status: 400 });
+    }
+
+    const updated = await prisma.intervention.update({
+      where: { id },
+      data: { status },
+    });
+
+    return NextResponse.json(updated);
+  } catch (error: any) {
+    console.error('Error updating intervention:', error);
+    return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
+  }
+}

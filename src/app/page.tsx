@@ -5,7 +5,8 @@ import {
   Search, Filter, Settings as SettingsIcon, Bell, Download, ChevronRight, 
   Activity, Users, AlertTriangle, CheckCircle, 
   X, Briefcase, BookOpen, Clock, AlertCircle, Loader2, Plus, Sliders, Server, Save,
-  Database, Radio, Cpu, RefreshCw, Laptop, Coffee, MessageSquare, Play, Upload
+  Database, Radio, Cpu, RefreshCw, Laptop, Coffee, MessageSquare, Play, Upload,
+  GraduationCap, Bus, Wallet, HeartHandshake, PhoneCall, ShieldAlert, Zap, Target, TrendingDown, MapPin, Award, HandCoins
 } from 'lucide-react';
 
 export default function Dashboard() {
@@ -434,6 +435,168 @@ export default function Dashboard() {
     });
     return list;
   }, [students]);
+
+  // ─── INTERVENTION RECOMMENDATION ENGINE ─────────────────────────────────────
+  // Maps specific risk drivers to real-world, actionable interventions
+  const getSmartRecommendations = (student: any) => {
+    const recs: { id: string; category: string; driver: string; action: string; scheme: string; icon: any; urgency: 'critical' | 'high' | 'moderate' | 'low'; color: string; bgColor: string; borderColor: string }[] = [];
+    const attendance = student.attendance;
+    const cgpa = student.cgpa ?? student.gpa;
+    const spi = student.spi ?? student.gpa;
+    const socioEcon = student.socioEconomicStatus;
+    const riskFactors = student.riskFactors || [];
+
+    // 1. Attendance dropping + socio-economic stress → Transport / Hostel support
+    if (attendance < 75 && socioEcon === 'Low') {
+      recs.push({
+        id: 'transport-support',
+        category: 'Transport & Accommodation',
+        driver: 'Attendance dropping + Low socio-economic status',
+        action: 'Recommend hostel facility or transport support',
+        scheme: 'Govt bicycle/bus schemes (e.g. Mukhyamantri Balika Cycle Yojana, state transport subsidies)',
+        icon: Bus,
+        urgency: 'critical',
+        color: 'text-rose-700',
+        bgColor: 'bg-rose-50',
+        borderColor: 'border-rose-200',
+      });
+    }
+
+    // 2. Socio-economic stress / BPL → Scholarship auto-flag
+    if (socioEcon === 'Low') {
+      recs.push({
+        id: 'scholarship-flag',
+        category: 'Financial Aid & Scholarships',
+        driver: 'Low socio-economic background / BPL family indicator',
+        action: 'Auto-flag for scholarship schemes & fee waiver review',
+        scheme: 'National Means-cum-Merit Scholarship (NMMS), State Scholarship Portals, Post-Matric Scholarship for SC/ST/OBC',
+        icon: HandCoins,
+        urgency: 'high',
+        color: 'text-amber-700',
+        bgColor: 'bg-amber-50',
+        borderColor: 'border-amber-200',
+      });
+    }
+
+    // 3. Academic decline only (CGPA/SPI low but attendance ok) → Peer tutoring / Remedial
+    if ((cgpa < 6.5 || spi < 6.0) && attendance >= 75) {
+      recs.push({
+        id: 'peer-tutoring',
+        category: 'Academic Remediation',
+        driver: `Academic decline detected (CGPA: ${cgpa?.toFixed(1)}, SPI: ${spi?.toFixed(1)}) with adequate attendance`,
+        action: 'Assign to peer tutoring group & remedial classes',
+        scheme: 'Teaching at the Right Level (TaRL) model by Pratham, department-level tutorial batches',
+        icon: GraduationCap,
+        urgency: 'high',
+        color: 'text-blue-700',
+        bgColor: 'bg-blue-50',
+        borderColor: 'border-blue-200',
+      });
+    }
+
+    // 4. Low engagement (decent attendance, but weak academic performance) → Mentor/counselor check-in
+    if (attendance >= 80 && cgpa >= 6.0 && cgpa < 7.5 && student.riskLevel !== 'Low') {
+      recs.push({
+        id: 'mentor-checkin',
+        category: 'Mentorship & Counseling',
+        driver: 'Low academic engagement despite regular attendance',
+        action: 'Trigger mentor/counselor check-in call',
+        scheme: 'Faculty advisor meeting, peer mentor assignment, career counseling cell referral',
+        icon: PhoneCall,
+        urgency: 'moderate',
+        color: 'text-violet-700',
+        bgColor: 'bg-violet-50',
+        borderColor: 'border-violet-200',
+      });
+    }
+
+    // 5. Sudden drop across ALL indicators → Emergency multi-department alert
+    if (cgpa < 5.5 && attendance < 70) {
+      recs.push({
+        id: 'emergency-alert',
+        category: 'Emergency Multi-Dept Alert',
+        driver: 'Sudden severe drop across academics AND attendance',
+        action: 'Escalate to Dean of Students + HOD + Counseling Cell immediately',
+        scheme: 'Institutional crisis protocol, home visit by welfare officer, family liaison meeting',
+        icon: ShieldAlert,
+        urgency: 'critical',
+        color: 'text-rose-700',
+        bgColor: 'bg-rose-50',
+        borderColor: 'border-rose-200',
+      });
+    }
+
+    // 6. Attendance below 75% (general) → Attendance warning
+    if (attendance < 75 && socioEcon !== 'Low') {
+      recs.push({
+        id: 'attendance-warning',
+        category: 'Attendance Monitoring',
+        driver: `Attendance rate critically low at ${attendance}% (below 75% mandatory threshold)`,
+        action: 'Issue official attendance warning & parent notification',
+        scheme: 'Automated SMS alert to parents, biometric attendance audit, leave regularization review',
+        icon: AlertTriangle,
+        urgency: 'high',
+        color: 'text-orange-700',
+        bgColor: 'bg-orange-50',
+        borderColor: 'border-orange-200',
+      });
+    }
+
+    // 7. Medium risk, decent stats → Proactive monitoring
+    if (recs.length === 0 && student.riskLevel === 'Medium') {
+      recs.push({
+        id: 'proactive-monitor',
+        category: 'Proactive Monitoring',
+        driver: 'Student flagged as medium risk — preventive watch recommended',
+        action: 'Add to weekly faculty check-in list & monitor next semester performance',
+        scheme: 'Faculty advisor bi-weekly meetings, academic progress tracker enrollment',
+        icon: Target,
+        urgency: 'moderate',
+        color: 'text-sky-700',
+        bgColor: 'bg-sky-50',
+        borderColor: 'border-sky-200',
+      });
+    }
+
+    return recs;
+  };
+
+  // Aggregate all smart recommendations across at-risk students
+  const smartRecommendations = useMemo(() => {
+    const allRecs: { studentId: string; studentName: string; studentEmail: string; department: string; riskLevel: string; riskScore: number; recommendations: ReturnType<typeof getSmartRecommendations> }[] = [];
+    students.forEach(student => {
+      if (student.riskLevel === 'High' || student.riskLevel === 'Medium') {
+        const recs = getSmartRecommendations(student);
+        if (recs.length > 0) {
+          allRecs.push({
+            studentId: student.id,
+            studentName: student.name,
+            studentEmail: student.email,
+            department: student.department || 'Unknown',
+            riskLevel: student.riskLevel,
+            riskScore: student.riskScore,
+            recommendations: recs,
+          });
+        }
+      }
+    });
+    return allRecs;
+  }, [students]);
+
+  // Count recommendations by category
+  const recCategoryCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    smartRecommendations.forEach(sr => {
+      sr.recommendations.forEach(r => {
+        counts[r.category] = (counts[r.category] || 0) + 1;
+      });
+    });
+    return counts;
+  }, [smartRecommendations]);
+
+  const totalSmartRecs = useMemo(() => {
+    return smartRecommendations.reduce((acc, sr) => acc + sr.recommendations.length, 0);
+  }, [smartRecommendations]);
 
   // Safe percentage calculator
   const highPercentage = totalMonitored > 0 ? Math.round((criticalRiskCount / totalMonitored) * 100) : 0;
@@ -1054,21 +1217,183 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* INTERVENTIONS TAB */}
+        {/* INTERVENTIONS TAB — SMART RECOMMENDATION ENGINE */}
         {activeTab === 'Interventions' && (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-8">
+            {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
               <div>
-                <h2 className="text-2xl font-bold text-slate-900 mb-1">Active Interventions Dashboard</h2>
-                <p className="text-sm text-slate-500">Track and manage counselor schedules, tutoring pipelines, and support grants.</p>
+                <h2 className="text-2xl font-bold text-slate-900 mb-1 flex items-center gap-2">
+                  <Zap className="w-6 h-6 text-amber-500" />
+                  Intervention Recommendation Engine
+                </h2>
+                <p className="text-sm text-slate-500">AI-driven mapping of risk drivers to real, on-ground actionable interventions — not generic alerts.</p>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="text-xs px-3 py-1.5 bg-rose-50 text-rose-700 font-semibold rounded-full border border-rose-200">
+                  {smartRecommendations.filter(s => s.riskLevel === 'High').length} Critical Students
+                </span>
+                <span className="text-xs px-3 py-1.5 bg-amber-50 text-amber-700 font-semibold rounded-full border border-amber-200">
+                  {totalSmartRecs} Recommendations
+                </span>
               </div>
             </div>
 
-            {/* List of Interventions */}
+            {/* Category Summary Cards */}
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+              {[
+                { label: 'Transport & Accommodation', icon: Bus, color: 'text-rose-600', bg: 'bg-rose-50', border: 'border-rose-100' },
+                { label: 'Financial Aid & Scholarships', icon: HandCoins, color: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-100' },
+                { label: 'Academic Remediation', icon: GraduationCap, color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-100' },
+                { label: 'Mentorship & Counseling', icon: PhoneCall, color: 'text-violet-600', bg: 'bg-violet-50', border: 'border-violet-100' },
+                { label: 'Emergency Multi-Dept Alert', icon: ShieldAlert, color: 'text-rose-600', bg: 'bg-rose-50', border: 'border-rose-100' },
+              ].map(cat => {
+                const count = recCategoryCounts[cat.label] || 0;
+                const IconComp = cat.icon;
+                return (
+                  <div key={cat.label} className={`p-4 rounded-xl border ${cat.border} ${cat.bg} transition-all hover:shadow-md`}>
+                    <div className="flex items-center gap-2 mb-2">
+                      <IconComp className={`w-5 h-5 ${cat.color}`} />
+                      <span className={`text-2xl font-bold font-mono ${cat.color}`}>{count}</span>
+                    </div>
+                    <p className="text-[11px] font-medium text-slate-600 leading-tight">{cat.label}</p>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Smart Recommendations Per Student */}
+            {smartRecommendations.length > 0 ? (
+              <div className="space-y-6">
+                {smartRecommendations.map(sr => (
+                  <div key={sr.studentId} className="bg-white rounded-2xl border border-slate-200/60 shadow-sm overflow-hidden">
+                    {/* Student Header */}
+                    <div className="p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold
+                          ${sr.riskLevel === 'High' ? 'bg-rose-100 text-rose-700' : 'bg-amber-100 text-amber-700'}
+                        `}>
+                          {sr.studentName.split(' ').map(n => n[0]).join('')}
+                        </div>
+                        <div>
+                          <h3 className="font-semibold text-slate-900">{sr.studentName}</h3>
+                          <p className="text-xs text-slate-500">{sr.department} • {sr.studentEmail}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className={`text-[10px] px-2.5 py-1 rounded-full font-bold uppercase tracking-wider border
+                          ${sr.riskLevel === 'High' ? 'bg-rose-50 border-rose-200 text-rose-700' : 'bg-amber-50 border-amber-200 text-amber-700'}
+                        `}>
+                          {sr.riskLevel} Risk — {sr.riskScore}%
+                        </span>
+                        <span className="text-xs text-slate-400">{sr.recommendations.length} intervention{sr.recommendations.length > 1 ? 's' : ''}</span>
+                      </div>
+                    </div>
+
+                    {/* Recommendation Cards */}
+                    <div className="divide-y divide-slate-100">
+                      {sr.recommendations.map(rec => {
+                        const RecIcon = rec.icon;
+                        return (
+                          <div key={rec.id} className="p-5 hover:bg-slate-50/30 transition-colors">
+                            <div className="flex gap-4">
+                              {/* Icon column */}
+                              <div className={`w-10 h-10 rounded-xl ${rec.bgColor} ${rec.borderColor} border flex items-center justify-center shrink-0`}>
+                                <RecIcon className={`w-5 h-5 ${rec.color}`} />
+                              </div>
+
+                              {/* Content */}
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-start justify-between gap-3 mb-1.5">
+                                  <h4 className="font-semibold text-slate-900 text-sm">{rec.category}</h4>
+                                  <span className={`text-[9px] px-2 py-0.5 rounded font-bold uppercase tracking-widest shrink-0
+                                    ${rec.urgency === 'critical' ? 'bg-rose-100 text-rose-700' : 
+                                      rec.urgency === 'high' ? 'bg-amber-100 text-amber-700' : 
+                                      rec.urgency === 'moderate' ? 'bg-sky-100 text-sky-700' :
+                                      'bg-slate-100 text-slate-500'}
+                                  `}>
+                                    {rec.urgency}
+                                  </span>
+                                </div>
+
+                                {/* Risk Driver */}
+                                <div className="flex items-start gap-2 mb-2">
+                                  <TrendingDown className="w-3.5 h-3.5 text-rose-400 mt-0.5 shrink-0" />
+                                  <p className="text-xs text-slate-500">
+                                    <span className="font-semibold text-slate-600">Risk Driver: </span>
+                                    {rec.driver}
+                                  </p>
+                                </div>
+
+                                {/* Recommended Action */}
+                                <div className="flex items-start gap-2 mb-2">
+                                  <Target className="w-3.5 h-3.5 text-emerald-500 mt-0.5 shrink-0" />
+                                  <p className="text-xs text-slate-700 font-medium">
+                                    <span className="font-semibold">Action: </span>
+                                    {rec.action}
+                                  </p>
+                                </div>
+
+                                {/* Scheme / Program */}
+                                <div className="flex items-start gap-2">
+                                  <Award className="w-3.5 h-3.5 text-blue-400 mt-0.5 shrink-0" />
+                                  <p className="text-[11px] text-slate-400 italic">
+                                    {rec.scheme}
+                                  </p>
+                                </div>
+                              </div>
+
+                              {/* Deploy Button */}
+                              <div className="shrink-0 self-center">
+                                <button
+                                  onClick={() => {
+                                    // Find student, create intervention
+                                    fetch('/api/interventions', {
+                                      method: 'POST',
+                                      headers: { 'Content-Type': 'application/json' },
+                                      body: JSON.stringify({
+                                        studentId: sr.studentId,
+                                        type: rec.category,
+                                        notes: `${rec.action} — ${rec.scheme}`,
+                                      }),
+                                    }).then(res => {
+                                      if (res.ok) {
+                                        setToast({ message: `Deployed "${rec.category}" intervention for ${sr.studentName}`, type: 'success' });
+                                        fetchStudents();
+                                      } else {
+                                        setToast({ message: 'Failed to deploy intervention', type: 'error' });
+                                      }
+                                    }).catch(() => setToast({ message: 'Network error', type: 'error' }));
+                                  }}
+                                  className="px-3 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-semibold transition-all active:scale-95 flex items-center gap-1.5"
+                                >
+                                  <Play className="w-3 h-3" /> Deploy
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm py-20 text-center">
+                <CheckCircle className="w-10 h-10 mx-auto text-emerald-500 mb-3" />
+                <p className="text-slate-600 font-medium">All students are currently low-risk.</p>
+                <p className="text-xs text-slate-400 mt-1">No intervention recommendations needed at this time.</p>
+              </div>
+            )}
+
+            {/* Existing Database Interventions (Historical Log) */}
             <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm overflow-hidden">
               <div className="p-5 border-b border-slate-100 flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-slate-900">Database Action Items</h3>
-                <span className="text-xs px-2.5 py-1 bg-blue-50 text-blue-700 font-semibold rounded-full">{allInterventions.length} Tasks Pending</span>
+                <h3 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
+                  <Database className="w-4 h-4 text-slate-400" />
+                  Deployed Intervention Log
+                </h3>
+                <span className="text-xs px-2.5 py-1 bg-blue-50 text-blue-700 font-semibold rounded-full border border-blue-200">{allInterventions.length} Records</span>
               </div>
               
               <div className="divide-y divide-slate-100">
@@ -1076,7 +1401,7 @@ export default function Dashboard() {
                   allInterventions.map((int: any) => (
                     <div key={int.id} className="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-slate-50/50 transition-colors">
                       <div className="space-y-1">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <span className="font-semibold text-slate-900">{int.type}</span>
                           <span className={`text-[10px] px-2 py-0.5 rounded font-semibold border uppercase tracking-wider
                             ${int.riskLevel === 'High' ? 'bg-rose-50 border-rose-100 text-rose-700' : 
@@ -1087,11 +1412,10 @@ export default function Dashboard() {
                           </span>
                         </div>
                         <p className="text-sm text-slate-500">{int.notes}</p>
-                        <span className="text-xs text-slate-400 block">Assigned student: {int.studentEmail}</span>
+                        <span className="text-xs text-slate-400 block">{int.studentEmail}</span>
                       </div>
 
                       <div className="flex items-center gap-3 shrink-0">
-                        {/* Status badge */}
                         <span className={`px-2.5 py-1 text-xs font-semibold rounded-full border
                           ${int.status === 'completed' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
                             int.status === 'in_progress' ? 'bg-blue-50 text-blue-700 border-blue-200' :
@@ -1100,7 +1424,6 @@ export default function Dashboard() {
                           {int.status}
                         </span>
 
-                        {/* Actions */}
                         <div className="flex items-center gap-1.5">
                           {int.status !== 'in_progress' && int.status !== 'completed' && (
                             <button 
@@ -1123,9 +1446,9 @@ export default function Dashboard() {
                     </div>
                   ))
                 ) : (
-                  <div className="py-20 text-center text-slate-500">
-                    <CheckCircle className="w-8 h-8 mx-auto text-emerald-500 mb-3" />
-                    <p>All students are currently classified low-risk. No active interventions required!</p>
+                  <div className="py-12 text-center text-slate-500">
+                    <Database className="w-6 h-6 mx-auto text-slate-300 mb-2" />
+                    <p className="text-sm">No interventions deployed yet. Use the recommendation engine above to deploy actionable interventions.</p>
                   </div>
                 )}
               </div>
@@ -1786,31 +2109,77 @@ export default function Dashboard() {
 
             </div>
 
-            {/* Drawer Footer / Actions */}
+            {/* Drawer Footer / Smart Intervention Actions */}
             <div className="p-6 border-t border-slate-200 bg-slate-50">
-              <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-3">Deploy Database Intervention</h3>
+              <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-1 flex items-center gap-2">
+                <Zap className="w-4 h-4 text-amber-500" /> Smart Interventions
+              </h3>
+              <p className="text-[10px] text-slate-400 mb-3">Context-aware recommendations based on this student's risk profile.</p>
               <div className="space-y-2">
-                <button 
-                  onClick={() => triggerIntervention("Assign Peer Mentor")}
-                  className="w-full flex items-center justify-between p-3 bg-white border border-slate-200 rounded-lg text-sm font-medium text-slate-700 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 transition-colors group"
-                >
-                  <span className="flex items-center gap-2"><Users className="w-4 h-4 text-slate-400 group-hover:text-blue-500" /> Assign Peer Mentor</span>
-                  <ChevronRight className="w-4 h-4 opacity-50" />
-                </button>
-                <button 
-                  onClick={() => triggerIntervention("Schedule Counselor Call")}
-                  className="w-full flex items-center justify-between p-3 bg-white border border-slate-200 rounded-lg text-sm font-medium text-slate-700 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 transition-colors group"
-                >
-                  <span className="flex items-center gap-2"><Clock className="w-4 h-4 text-slate-400 group-hover:text-blue-500" /> Schedule Counselor Call</span>
-                  <ChevronRight className="w-4 h-4 opacity-50" />
-                </button>
-                <button 
-                  onClick={() => triggerIntervention("Financial Aid Review")}
-                  className="w-full flex items-center justify-between p-3 bg-white border border-slate-200 rounded-lg text-sm font-medium text-slate-700 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 transition-colors group"
-                >
-                  <span className="flex items-center gap-2"><AlertCircle className="w-4 h-4 text-slate-400 group-hover:text-blue-500" /> Financial Aid Review</span>
-                  <ChevronRight className="w-4 h-4 opacity-50" />
-                </button>
+                {(() => {
+                  const recs = selectedStudent ? getSmartRecommendations(selectedStudent) : [];
+                  if (recs.length > 0) {
+                    return recs.map(rec => {
+                      const RecIcon = rec.icon;
+                      return (
+                        <button
+                          key={rec.id}
+                          onClick={() => triggerIntervention(rec.category + ': ' + rec.action)}
+                          className={`w-full flex items-start gap-3 p-3 bg-white border ${rec.borderColor} rounded-xl text-left hover:shadow-sm transition-all group`}
+                        >
+                          <div className={`w-8 h-8 rounded-lg ${rec.bgColor} flex items-center justify-center shrink-0 mt-0.5`}>
+                            <RecIcon className={`w-4 h-4 ${rec.color}`} />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="font-semibold text-slate-800 text-xs">{rec.category}</span>
+                              <span className={`text-[8px] px-1.5 py-0.5 rounded font-bold uppercase
+                                ${rec.urgency === 'critical' ? 'bg-rose-100 text-rose-600' :
+                                  rec.urgency === 'high' ? 'bg-amber-100 text-amber-600' :
+                                  'bg-sky-100 text-sky-600'}
+                              `}>{rec.urgency}</span>
+                            </div>
+                            <p className="text-[11px] text-slate-500 mt-0.5 leading-snug">{rec.action}</p>
+                            <p className="text-[9px] text-slate-400 italic mt-1">{rec.scheme}</p>
+                          </div>
+                          <ChevronRight className="w-4 h-4 text-slate-300 self-center shrink-0" />
+                        </button>
+                      );
+                    });
+                  } else {
+                    return (
+                      <div className="text-center py-4">
+                        <CheckCircle className="w-5 h-5 mx-auto text-emerald-400 mb-1" />
+                        <p className="text-xs text-slate-400">No specific interventions needed — student is on track.</p>
+                      </div>
+                    );
+                  }
+                })()}
+              </div>
+
+              {/* Manual Quick Actions */}
+              <div className="mt-4 pt-3 border-t border-slate-200">
+                <p className="text-[9px] font-semibold text-slate-400 uppercase tracking-widest mb-2">Manual Override</p>
+                <div className="flex gap-2">
+                  <button 
+                    onClick={() => triggerIntervention("Custom: Assign Peer Mentor")}
+                    className="flex-1 px-2.5 py-1.5 border border-slate-200 rounded-lg text-[10px] font-medium text-slate-500 hover:bg-slate-100 transition-colors text-center"
+                  >
+                    Peer Mentor
+                  </button>
+                  <button 
+                    onClick={() => triggerIntervention("Custom: Counselor Call")}
+                    className="flex-1 px-2.5 py-1.5 border border-slate-200 rounded-lg text-[10px] font-medium text-slate-500 hover:bg-slate-100 transition-colors text-center"
+                  >
+                    Counselor Call
+                  </button>
+                  <button 
+                    onClick={() => triggerIntervention("Custom: Financial Aid")}
+                    className="flex-1 px-2.5 py-1.5 border border-slate-200 rounded-lg text-[10px] font-medium text-slate-500 hover:bg-slate-100 transition-colors text-center"
+                  >
+                    Financial Aid
+                  </button>
+                </div>
               </div>
             </div>
 
