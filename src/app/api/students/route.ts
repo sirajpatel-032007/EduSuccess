@@ -16,7 +16,6 @@ export async function GET() {
 
     // Format for frontend
     const formatted = students.map(student => {
-      const latestAcademic = student.academicRecords[student.academicRecords.length - 1] || { gpa: 0, creditsEarned: 0 };
       const latestAttendance = student.attendanceRecords[student.attendanceRecords.length - 1] || { totalDays: 1, daysAttended: 1 };
       
       const attendanceRate = Math.round((latestAttendance.daysAttended / (latestAttendance.totalDays || 1)) * 100);
@@ -34,18 +33,22 @@ export async function GET() {
         riskLevel = 'Medium';
       }
 
-      // Collect risk factors
+      // Collect risk factors based on college standards
       const riskFactors: string[] = [];
-      if (latestAcademic.gpa < 2.0) riskFactors.push('Low GPA');
-      if (attendanceRate < 85) riskFactors.push('Low Attendance');
+      if (student.cgpa < 6.0) riskFactors.push('Low CGPA (< 6.0)');
+      if (student.spi < 6.0) riskFactors.push('Low Semester SPI (< 6.0)');
+      if (attendanceRate < 75) riskFactors.push('Low Attendance (< 75%)');
       if (student.socioEconomicStatus === 'Low') riskFactors.push('Socio-Economic Stress');
 
       return {
         id: student.id,
         name: student.name,
         email: student.email,
-        grade: student.gradeLevel,
-        gpa: latestAcademic.gpa,
+        grade: student.gradeLevel, // semester maps to grade for UI compatibility
+        department: student.department,
+        cgpa: student.cgpa,
+        spi: student.spi,
+        gpa: student.cgpa, // GPA fallback mapping
         attendance: attendanceRate,
         riskScore,
         riskLevel,
@@ -66,9 +69,9 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { name, email, gradeLevel, socioEconomicStatus, gpa, attendanceRate } = body;
+    const { name, email, gradeLevel, socioEconomicStatus, gpa, attendanceRate, department, cgpa, spi } = body;
 
-    if (!name || !email || !gradeLevel || !socioEconomicStatus || gpa === undefined || attendanceRate === undefined) {
+    if (!name || !email || !gradeLevel || !socioEconomicStatus || attendanceRate === undefined) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
@@ -76,6 +79,10 @@ export async function POST(request: Request) {
     let riskScore = 0.2;
     let riskLevel = 'Low';
     let recommendedInterventions: string[] = [];
+
+    // Parse CGPA and SPI (10.0 scale)
+    const studentCgpa = cgpa !== undefined ? Number(cgpa) : (gpa !== undefined ? Number(gpa) : 7.0);
+    const studentSpi = spi !== undefined ? Number(spi) : (gpa !== undefined ? Number(gpa) : 7.0);
 
     try {
       const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
@@ -86,9 +93,9 @@ export async function POST(request: Request) {
         },
         body: JSON.stringify({
           student_id: email,
-          gpa: Number(gpa),
+          gpa: studentCgpa,
           attendance_rate: Number(attendanceRate) / 100,
-          credits_earned: 15,
+          credits_earned: 22,
           socio_economic_status: socioEconomicStatus,
         }),
       });
@@ -101,13 +108,16 @@ export async function POST(request: Request) {
       }
     } catch (apiErr) {
       console.error('FastAPI fetch failed, falling back to local calculation:', apiErr);
-      // Fallback
+      // Fallback local calculations
       riskScore = 0.1;
-      if (gpa < 2.5) riskScore += 0.4;
-      if (attendanceRate < 85) riskScore += 0.3;
+      if (studentCgpa < 6.0) riskScore += 0.45;
+      if (studentSpi < 6.0) riskScore += 0.20;
+      if (Number(attendanceRate) < 75) riskScore += 0.35;
       if (socioEconomicStatus === 'Low') riskScore += 0.1;
       riskLevel = riskScore > 0.7 ? 'High' : riskScore > 0.4 ? 'Medium' : 'Low';
-      recommendedInterventions = riskLevel === 'High' ? ['Schedule counseling session', 'Intensive tutoring'] : ['Continue current trajectory'];
+      recommendedInterventions = riskLevel === 'High' 
+        ? ['Schedule counselor review session', 'Academic probation mentoring'] 
+        : ['Continue current trajectory'];
     }
 
     // Save to Database
@@ -117,13 +127,16 @@ export async function POST(request: Request) {
         email,
         enrollmentDate: new Date(),
         gradeLevel: Number(gradeLevel),
+        department: department || 'Computer Science',
+        cgpa: studentCgpa,
+        spi: studentSpi,
         socioEconomicStatus,
         riskScore,
         academicRecords: {
           create: {
             term: 'Current',
-            gpa: Number(gpa),
-            creditsEarned: 15,
+            gpa: studentCgpa,
+            creditsEarned: 22,
           }
         },
         attendanceRecords: {

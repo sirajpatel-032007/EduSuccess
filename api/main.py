@@ -36,16 +36,27 @@ def predict_risk(data: StudentData):
     # Mock AI Model Logic
     # In a real scenario, this would use a loaded scikit-learn or TensorFlow model
     
-    # Calculate a mock risk score based on inputs
-    risk_score = 0.1 # Base risk
+    # Detect if GPA is on a 10.0 scale (CGPA) or 4.0 scale
+    is_cgpa_scale = data.gpa > 4.0
     
-    if data.gpa < 2.0:
-        risk_score += 0.4
-    elif data.gpa < 2.5:
-        risk_score += 0.2
+    # Calculate a mock risk score based on inputs
+    risk_score = 0.05 # Base risk
+    
+    if is_cgpa_scale:
+        if data.gpa < 6.0:
+            risk_score += 0.45
+        elif data.gpa < 7.2:
+            risk_score += 0.25
+    else:
+        if data.gpa < 2.0:
+            risk_score += 0.45
+        elif data.gpa < 2.7:
+            risk_score += 0.25
         
-    if data.attendance_rate < 0.85:
-        risk_score += 0.3
+    if data.attendance_rate < 0.75: # College attendance limit (often 75% is compulsory)
+        risk_score += 0.40
+    elif data.attendance_rate < 0.85:
+        risk_score += 0.20
         
     if data.socio_economic_status.lower() == 'low':
         risk_score += 0.1
@@ -56,10 +67,10 @@ def predict_risk(data: StudentData):
     # Determine risk level
     if risk_score > 0.7:
         risk_level = "High"
-        interventions = ["Schedule counseling session", "Review for financial aid eligibility", "Intensive tutoring"]
+        interventions = ["Schedule counselor review session", "Academic probation mentoring", "Review for low-income grants"]
     elif risk_score > 0.4:
         risk_level = "Medium"
-        interventions = ["Recommend peer tutoring", "Send attendance warning"]
+        interventions = ["Recommend peer tutoring", "Send attendance warnings"]
     else:
         risk_level = "Low"
         interventions = ["Continue current trajectory"]

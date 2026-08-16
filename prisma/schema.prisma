@@ -15,7 +15,10 @@ model Student {
   name                String
   email               String             @unique
   enrollmentDate      DateTime
-  gradeLevel          Int
+  gradeLevel          Int                // Semester (1 - 8)
+  department          String             @default("Computer Science") // e.g., 'Computer Science', 'Mechanical'
+  cgpa                Float              @default(0.0)
+  spi                 Float              @default(0.0)
   socioEconomicStatus String             // e.g., 'Low', 'Middle', 'High'
   riskScore           Float?             // AI calculated risk score
   createdAt           DateTime           @default(now())
