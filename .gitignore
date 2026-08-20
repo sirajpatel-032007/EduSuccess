@@ -10,15 +10,13 @@
 # Production build output
 /build
 
-# Environment variables & secrets
-.env
+# Environment variables - local secrets only
 .env*.local
 
-# Database files (SQLite)
-*.db
-*.db-journal
-prisma/dev.db
+# Database files (SQLite) - built during deploy
+prisma/dev.db-journal
 dev.db
+dev.db-journal
 
 # Debug logs & caches
 npm-debug.log*
